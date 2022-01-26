@@ -59,7 +59,7 @@ esp_err_t fs_init(void)
 }
 
 
-esp_err_t pwm_init(void)
+esp_err_t esp_pwm_init(void)
 {
     const uint32_t pin_num[3] = {
         PWM_0_OUT_IO_NUM,
@@ -92,5 +92,5 @@ void app_main(void)
 
     ESP_ERROR_CHECK(example_connect());
     ESP_ERROR_CHECK(start_rest_server());
-    ESP_ERROR_CHECK(pwm_init());
+    ESP_ERROR_CHECK(esp_pwm_init());
 }

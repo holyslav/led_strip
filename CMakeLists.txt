@@ -18,11 +18,20 @@ if (NOT EXISTS ${MKSPIFFS_PATH})
     message(FATAL_ERROR "Need compile mkspiffs. Run install.sh in ESP RTOS SDK.")
 endif()
 
+add_custom_command(OUTPUT "${project_dir}/data/storage.lock"
+    COMMAND touch ${project_dir}/data/storage.lock
+    COMMAND rm -f ${build_dir}/storage.bin
+    VERBATIM
+    WORKING_DIRECTORY ${build_dir}
+    COMMENT "Generating spiffs lock file in directory /data for check data update")
+
 add_custom_command(OUTPUT "${build_dir}/storage.bin"
     COMMAND ${MKSPIFFS_PATH} --create ${project_dir}/data --page 256 --size ${storage_size} ${build_dir}/storage.bin
     VERBATIM
+    DEPENDS "${project_dir}/data/storage.lock"
     WORKING_DIRECTORY ${build_dir}
     COMMENT "Generating spiffs binary image from directory /data")
+
 
 add_custom_target(storage DEPENDS "${build_dir}/storage.bin")
 

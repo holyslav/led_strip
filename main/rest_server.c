@@ -1,13 +1,11 @@
 #include "consts.h"
 
-static int red = 0, green = 0, blue = 0;
-
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
     do                                                                                 \
     {                                                                                  \
         if (!(a))                                                                      \
         {                                                                              \
-            ESP_LOGE(REST_TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+            ESP_LOGE(TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
             goto goto_tag;                                                             \
         }                                                                              \
     } while (0)
@@ -21,6 +19,11 @@ typedef struct rest_server_context {
 } rest_server_context_t;
 
 #define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
+
+static int red = 0, green = 0, blue = 0;
+
+
+long map(long x, long in_min, long in_max, long out_min, long out_max);
 
 /* Set HTTP response content type according to file extension */
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
@@ -59,9 +62,9 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
 
 
     FILE* fd = fopen(filepath, "r");
-    ESP_LOGI(REST_TAG, "Try open file : %s", filepath);
+    ESP_LOGI(TAG, "Try open file : %s", filepath);
     if (fd == NULL) {
-        ESP_LOGE(REST_TAG, "Failed to open file : %s", filepath);
+        ESP_LOGE(TAG, "Failed to open file : %s", filepath);
         /* Respond with 500 Internal Server Error */
         httpd_resp_set_status(req, HTTPD_500);
         return ESP_FAIL;
@@ -80,7 +83,7 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
         if (httpd_resp_send_chunk(req, chunk, num_read) != ESP_OK)
         {
             fclose(fd);
-            ESP_LOGE(REST_TAG, "File sending failed!: %s", filepath);
+            ESP_LOGE(TAG, "File sending failed!: %s", filepath);
             httpd_resp_send_chunk(req, NULL, 0);
             httpd_resp_set_status(req, HTTPD_500);
             return ESP_FAIL;
@@ -89,12 +92,12 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
     } while (num_read == SCRATCH_BUFSIZE);
  
  
-    ESP_LOGI(REST_TAG, "Read %i characters\n", total_read);
+    ESP_LOGI(TAG, "Read %i characters\n", total_read);
 
     fclose(fd);
 
 
-    ESP_LOGI(REST_TAG, "File sending complete: %s", filepath);
+    ESP_LOGI(TAG, "File sending complete: %s", filepath);
     httpd_resp_send_chunk(req, NULL, 0);
 
     return ESP_OK;
@@ -116,16 +119,11 @@ static esp_err_t light_brightness_get_handler(httpd_req_t *req)
 
     httpd_resp_send(req, buffer, -1);
 
-    ESP_LOGI(REST_TAG, "buffer: %s", buffer);
+    ESP_LOGI(TAG, "buffer: %s", buffer);
 
     free((void *)buffer);
 
     return ESP_OK;
-}
-
-long map(long x, long in_min, long in_max, long out_min, long out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 /* Simple handler for light brightness control */
@@ -155,7 +153,7 @@ static esp_err_t light_brightness_post_handler(httpd_req_t *req)
     red = cJSON_GetObjectItem(root, "red")->valueint;
     green = cJSON_GetObjectItem(root, "green")->valueint;
     blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
+    ESP_LOGI(TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
     cJSON_Delete(root);
     httpd_resp_send(req, "Post control value successfully", -1);
     pwm_set_duty(0, map(red, 0, 255, 0, PWM_PERIOD));
@@ -175,7 +173,7 @@ esp_err_t start_rest_server()
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
 
-    ESP_LOGI(REST_TAG, "Starting HTTP Server");
+    ESP_LOGI(TAG, "Starting HTTP Server");
     REST_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err_start);
 
     /* URI handler for light brightness control */
@@ -210,4 +208,9 @@ err_start:
     free(rest_context);
 err:
     return ESP_FAIL;
+}
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
