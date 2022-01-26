@@ -1,0 +1,9 @@
+menu "LED Strip Configuration"
+
+    config WEB_MOUNT_POINT
+        string "Website mount point in SPIFFS"
+        default "/data"
+        help
+            Specify the mount point in SPIFFS.
+
+endmenu
